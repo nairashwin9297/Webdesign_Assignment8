@@ -37,24 +37,36 @@ const createUserValidation = [
 
 // Create a new user
 app.post('/user/create', createUserValidation, async (req, res) => {
-    const errors = validationResult(req);
-  
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { email, fullName, password } = req.body;
+
+  try {
+    // Check if the user with the given email already exists
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.status(400).json({ errors: [{ msg: 'User with this email already exists' }] });
     }
-  
-    const { email, fullName, password } = req.body;
-  
+
     const hashedPassword = await bcrypt.hash(password, 10);
-  
+
     const newUser = new User({
       email,
       fullName,
       password: hashedPassword,
     });
-  
+
     await newUser.save();
     res.json({ message: 'User created successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server Error');
+  }
   });
   
   
